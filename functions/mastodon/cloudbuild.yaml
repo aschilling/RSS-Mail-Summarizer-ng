@@ -1,6 +1,7 @@
 steps:
   # Deploy mastodon_connector function
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    dir: 'functions/mastodon'
     entrypoint: gcloud
     args:
       - functions
