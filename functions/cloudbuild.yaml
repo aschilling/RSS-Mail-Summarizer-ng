@@ -25,13 +25,5 @@ steps:
       - --config=functions/sendmail/cloudbuild.yaml
       - --substitutions=_PROJECT_ID=$PROJECT_ID
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - builds
-      - submit
-      - functions/orchestrator
-      - --config=functions/orchestrator/cloudbuild.yaml
-
 options:
   logging: CLOUD_LOGGING_ONLY
