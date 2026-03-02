@@ -8,8 +8,10 @@ in Firestore gespeichert und beim nächsten Lauf wiederverwendet.
 """
 
 import time
+from urllib.parse import urlparse
 from mastodon import Mastodon
 from bs4 import BeautifulSoup
+from config import Config
 
 # Importiere shared modules (lokal + Cloud)
 from database import FirestoreRepository, logger
@@ -18,13 +20,18 @@ from database import FirestoreRepository, logger
 class MastodonService:
     """Service für die Verwaltung von Mastodon-Links"""
     
-    MASTODON_INSTANCE_URL = "https://mstdn.social"
-    TARGET_USERNAME = "pinboard_pop"
-    
     def __init__(self):
         """Initialisiert den Mastodon-Service"""
-        self.mastodon = Mastodon(api_base_url=self.MASTODON_INSTANCE_URL)
+        self.instance_url = Config.INSTANCE_URL
+        self.target_username = Config.TARGET_USERNAME
+        self.entry_limit = Config.ENTRY_LIMIT
+        self.fetch_all_since_last = getattr(Config, "FETCH_ALL_SINCE_LAST", True)
+
+        self.mastodon = Mastodon(api_base_url=self.instance_url)
         self.repo = FirestoreRepository()
+
+    def _fetch_mode(self) -> str:
+        return "FULL_SYNC" if self.fetch_all_since_last else "LIMITED_SYNC"
     
     def fetch_and_store_links(self):
         """
@@ -32,13 +39,17 @@ class MastodonService:
         und speichert enthaltene Links in der Datenbank.
         """
         start_time = time.time()
-        logger.info("Starte Mastodon-Connector...")
+        mode = self._fetch_mode()
+        logger.info(
+            f"Starte Mastodon-Connector [mode={mode}] (limit={self.entry_limit}, fetch_all_since_last={self.fetch_all_since_last})..."
+        )
 
         try:
             # Account anhand Username suchen
-            account = self.mastodon.account_lookup(f"{self.TARGET_USERNAME}@mstdn.social")
+            account_domain = urlparse(self.instance_url).netloc
+            account = self.mastodon.account_lookup(f"{self.target_username}@{account_domain}")
             if not account:
-                logger.error(f"Benutzer {self.TARGET_USERNAME} nicht gefunden.")
+                logger.error(f"Benutzer {self.target_username} nicht gefunden.")
                 return
 
             user_id = account["id"]
@@ -47,16 +58,22 @@ class MastodonService:
             # Prüfen, ob es bereits eine gespeicherte letzte Toot-ID gibt
             since_id = self.repo.get_last_toot_id()
             if since_id:
-                logger.info(f"Lade neue Toots seit ID {since_id} ...")
+                if self.fetch_all_since_last:
+                    logger.info(f"[mode={mode}] Branch aktiv: alle neuen Toots seit ID {since_id} laden.")
+                else:
+                    logger.info(
+                        f"[mode={mode}] Branch aktiv: maximal {self.entry_limit} neue Toots seit ID {since_id} laden."
+                    )
             else:
-                logger.info("Erster Lauf: 20 neueste Toots werden geladen.")
+                logger.info(f"[mode={mode}] Erster Lauf: bis zu {self.entry_limit} neueste Toots werden geladen.")
 
-            # Erste Abfrage von Toots (max. 20)
-            toots = self.mastodon.account_statuses(user_id, limit=20, since_id=since_id)
+            # Erste Abfrage von Toots (max. entry_limit)
+            toots = self.mastodon.account_statuses(user_id, limit=self.entry_limit, since_id=since_id)
             all_toots = list(toots)
+            logger.info(f"[mode={mode}] Initiale API-Antwort: {len(all_toots)} Toots.")
 
-            # Weitere Seiten abrufen, nur wenn since_id gesetzt ist
-            if since_id:
+            # Weitere Seiten abrufen nur im Modus "alle seit letztem Crawl"
+            if since_id and self.fetch_all_since_last:
                 while True:
                     next_page = self.mastodon.fetch_next(toots)
                     if not next_page:
@@ -68,6 +85,8 @@ class MastodonService:
 
                     all_toots.extend(filtered)
                     toots = next_page
+
+                    logger.info(f"[mode={mode}] Gesamtzahl zu verarbeitender Toots: {len(all_toots)}")
 
             if not all_toots:
                 logger.info("Keine neuen Toots gefunden.")
@@ -118,7 +137,7 @@ class MastodonService:
             for a_tag in soup.find_all("a", href=True):
                 href = a_tag["href"]
                 if (
-                    self.MASTODON_INSTANCE_URL not in href
+                    self.instance_url not in href
                     and "hashtag" not in a_tag.get("rel", [])
                     and "mention" not in a_tag.get("class", [])
                 ):
