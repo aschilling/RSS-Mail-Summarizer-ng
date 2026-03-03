@@ -16,6 +16,7 @@ import os
 import logging
 from dotenv import load_dotenv
 import functions_framework
+from datetime import date
 
 # interne helpers
 from database import get_unsent_entries, mark_as_sent, add_datarecord
@@ -136,11 +137,13 @@ class SendMailService:
             for entry in unsent
         }
 
+        today_str = date.today()
+
         create_markdown_report(summaries_from_db, MARKDOWN_REPORT_PATH)
         gmail_send_mail(
             self.sender_email,
             self.recipient_email,
-            subject="Today's News",
+            subject=f"Today's News ({today_str})",
             mail_body_file=MARKDOWN_REPORT_PATH,
         )
         mark_as_sent(unsent)
