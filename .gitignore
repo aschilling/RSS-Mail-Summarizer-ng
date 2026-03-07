@@ -22,4 +22,4 @@ credentials.json
 
 # OS spezifische Dateien
 .DS_Store
-Thumbs.db
+Thumbs.dbfunctions/sendmail/test_local*.py 
