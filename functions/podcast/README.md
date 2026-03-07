@@ -6,11 +6,11 @@ Dieses Projekt ist eine Google Cloud Function, die automatisiert ungelesene Arti
 
 Das Skript ist modular aufgebaut und umfasst folgende Kernkomponenten:
 
-* **Config**: Enthält statische Konfigurationsdaten wie das Limit für die Anzahl der Einträge und den Namen des Ziel-Buckets.
-* **PodcastAIService**: Lädt Rohtexte von Web-URLs und erstellt detaillierte Zusammenfassungen von YouTube-Videos über das native Google GenAI SDK. Generiert anschließend mit dem Gemini-2.5-Flash-Modell ein strukturiertes, zweistimmiges Podcast-Skript als JSON-Array.
-* **Firestore-Anbindung**: Initialisiert die Verbindung zu Firebase/Firestore und lädt ungesendete/ungelesene Einträge herunter.
-* **GCP TTS & Storage**: Wandelt das Text-Skript abwechselnd mit zwei verschiedenen Stimmen (`de-DE-Journey-D` und `de-DE-Journey-F`) in Audio um, fügt die generierten MP3-Bytes zusammen und lädt die finale Datei in den konfigurierten Storage Bucket hoch.
-* **podcast_trigger**: Der HTTP-Einstiegspunkt für das Functions Framework, der bei Aufruf der Cloud Function den gesamten Workflow koordiniert.
+* **Config (`config.py`)**: Quellen (Mastodon, Alerts, RSS), Limit und optionales Zeitfenster.
+* **Database (`database.py`)**: Firestore-Anbindung – lädt unverarbeitete Einträge anhand der Config, filtert clientseitig nach `podcast_generated` (fehlendes Feld = `False`) und markiert verarbeitete Docs.
+* **PodcastAIService (`main.py`)**: Lädt Rohtexte von Web-URLs, erstellt YouTube-Zusammenfassungen über das Google GenAI SDK und generiert mit Gemini 2.5 Flash ein zweistimmiges Podcast-Skript als JSON-Array.
+* **AudioService (`main.py`)**: Wandelt das Skript abwechselnd mit zwei TTS-Stimmen (`de-DE-Journey-D` / `de-DE-Journey-F`) in Audio um und lädt die MP3 in den konfigurierten GCS Bucket hoch.
+* **podcast_trigger (`main.py`)**: HTTP-Einstiegspunkt – koordiniert den gesamten Pipeline-Ablauf.
 
 ## Systemvoraussetzungen (Requirements)
 
