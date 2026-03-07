@@ -120,3 +120,4 @@ Um die Cloud Function automatisch um 07:00 und 15:00 Uhr deutscher Zeit auszufü
      --oidc-service-account-email="<SERVICE_ACCOUNT_EMAIL>" \
      --location=europe-west3
    ```
+

@@ -30,3 +30,4 @@ Rückverweise auf andere Verzeichnisse.
 
 Die Funktion `sendmail-trigger` kann vom Scheduler oder einem anderen
 Trigger (z. B. Pub/Sub) angesprochen werden, um den Versand auszulösen.
+
