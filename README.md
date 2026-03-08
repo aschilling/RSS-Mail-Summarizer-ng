@@ -1,8 +1,4 @@
-<h1 align="center">RSS Mail Summarizer NG</h1>
-
-<p align="center">
-	Automatisierte Content-Pipeline für RSS, Mastodon und Alerts mit Mail- und Podcast-Report auf Google Cloud.
-</p>
+<h1 align="center">RSS Mail Summarizer</h1>
 
 <p align="center">
 	<img src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+" />
