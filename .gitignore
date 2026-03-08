@@ -11,10 +11,10 @@ __pycache__/
 # Sensible Daten / Keys 
 **/keys/token.json
 **/keys/serviceAccountKey.json
-**/keys/credentials.json
+**/keys/gmail_credentials.json
 token.json
 serviceAccountKey.json
-credentials.json
+gmail_credentials.json
 
 # IDE spezifische Dateien
 .vscode/
