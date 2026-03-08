@@ -86,17 +86,9 @@ class FirestoreRepository:
 
     def get_last_toot_id(self, feed_name: str):
         """Holt die ID des zuletzt verarbeiteten Toots fuer einen bestimmten Feed."""
-        docs = (
-            self.db.collection("mastodon_toots")
-            .where("feed_name", "==", feed_name)
-            .order_by("toot_id", direction=firestore.Query.DESCENDING)
-            .limit(1)
-            .stream()
-        )
-
-        for doc in docs:
+        doc = self.db.collection("mastodon_toots").document(feed_name).get()
+        if doc.exists:
             return doc.to_dict().get("toot_id")
-
         return None
 
     def save_last_toot_id(self, toot_id: int, feed_name: str):
@@ -106,5 +98,5 @@ class FirestoreRepository:
             "feed_name": feed_name,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
         }
-        self.db.collection("mastodon_toots").add(data)
+        self.db.collection("mastodon_toots").document(feed_name).set(data)
         logger.info(f"Neue Toot-ID gespeichert fuer {feed_name}: {toot_id}")
