@@ -1,4 +1,15 @@
-## RSS Mail Summarizer
+<h1 align="center">RSS Mail Summarizer NG</h1>
+
+<p align="center">
+	Automatisierte Content-Pipeline fuer RSS, Mastodon und Alerts mit Mail-Report auf Google Cloud.
+</p>
+
+<p align="center">
+	<img src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+" />
+	<img src="https://img.shields.io/badge/runtime-Cloud%20Functions-4285F4?logo=googlecloud&logoColor=white" alt="Cloud Functions" />
+	<img src="https://img.shields.io/badge/deploy-Cloud%20Build-0F9D58?logo=googlecloud&logoColor=white" alt="Cloud Build" />
+	<img src="https://img.shields.io/badge/schedule-Cloud%20Scheduler-F9AB00?logo=googlecloud&logoColor=white" alt="Cloud Scheduler" />
+</p>
 
 Automatisierte Pipeline, die Inhalte aus RSS-Feeds, Mastodon und Alerts einsammelt, aufbereitet und als kompakten Mail-Report versendet. Das Projekt ist auf Google Cloud Functions ausgelegt und nutzt Cloud Build + Cloud Scheduler fuer Deployment und Ausfuehrung.
 
