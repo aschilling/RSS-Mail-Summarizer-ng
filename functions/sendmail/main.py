@@ -19,6 +19,7 @@ import functions_framework
 from datetime import date
 
 # interne helpers
+from config import SendmailConfig
 from database import get_unsent_entries, mark_as_sent, add_datarecord
 from helpers import gmail_send_mail, create_markdown_report, AIService, get_gemini_api_key
 
@@ -69,6 +70,35 @@ class SendMailService:
             return False
 
         logger.info(f"Gefundene ungesendete Einträge: {len(unsent)}")
+
+        # --- SOURCES-Filter ---
+        filtered = []
+        for e in unsent:
+            src = e.get("source") or ""
+            allowed = SendmailConfig.SOURCES.get(src)
+            if allowed is None or allowed == ["*"] or allowed:
+                filtered.append(e)
+            # leere Liste [] → Quelle deaktiviert
+        if len(filtered) != len(unsent):
+            logger.info(f"Nach SOURCES-Filter: {len(filtered)} von {len(unsent)} Einträgen verbleiben.")
+        unsent = filtered
+
+        # --- TIME_WINDOW_HOURS-Filter ---
+        if SendmailConfig.TIME_WINDOW_HOURS is not None:
+            from datetime import datetime, timezone, timedelta
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=SendmailConfig.TIME_WINDOW_HOURS)
+            before = len(unsent)
+            unsent = [e for e in unsent if e.get("time_stamp") is None or e["time_stamp"] >= cutoff]
+            logger.info(f"Nach TIME_WINDOW_HOURS-Filter ({SendmailConfig.TIME_WINDOW_HOURS}h): {len(unsent)} von {before} Einträgen verbleiben.")
+
+        # --- LIMIT ---
+        if SendmailConfig.LIMIT is not None and len(unsent) > SendmailConfig.LIMIT:
+            logger.info(f"Anzahl Einträge auf LIMIT={SendmailConfig.LIMIT} begrenzt (waren {len(unsent)}).")
+            unsent = unsent[:SendmailConfig.LIMIT]
+
+        if not unsent:
+            logger.info("Keine Einträge nach Filterung übrig.")
+            return False
 
         urls_without_summary = []
         for e in unsent:
