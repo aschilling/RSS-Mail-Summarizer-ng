@@ -68,7 +68,6 @@ class FirestoreRepository:
             
             if not doc.exists:
                 data = {
-                    "url": url,
                     "source": "mastodon",
                     "feed": feed_name,
                     "processed": False,
@@ -77,6 +76,7 @@ class FirestoreRepository:
                     "time_stamp": datetime.now(timezone.utc),
                     "category": "",
                     "sub_category": "",
+                    "url": url,
                 }
     
                 doc_ref.set(data)
@@ -84,10 +84,11 @@ class FirestoreRepository:
             else:
                 logger.debug(f"URL bereits vorhanden (wird ignoriert): {url}")
 
-    def get_last_toot_id(self):
-        """Holt die ID des zuletzt verarbeiteten Toots, um Duplikate zu vermeiden."""
+    def get_last_toot_id(self, feed_name: str):
+        """Holt die ID des zuletzt verarbeiteten Toots fuer einen bestimmten Feed."""
         docs = (
             self.db.collection("mastodon_toots")
+            .where("feed_name", "==", feed_name)
             .order_by("toot_id", direction=firestore.Query.DESCENDING)
             .limit(1)
             .stream()
@@ -98,11 +99,12 @@ class FirestoreRepository:
 
         return None
 
-    def save_last_toot_id(self, toot_id: int):
-        """Speichert die neueste gelesene Toot-ID."""
+    def save_last_toot_id(self, toot_id: int, feed_name: str):
+        """Speichert die neueste gelesene Toot-ID fuer einen bestimmten Feed."""
         data = {
             "toot_id": int(toot_id),
+            "feed_name": feed_name,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
         }
         self.db.collection("mastodon_toots").add(data)
-        logger.info(f"Neue Toot-ID gespeichert: {toot_id}")
+        logger.info(f"Neue Toot-ID gespeichert fuer {feed_name}: {toot_id}")
