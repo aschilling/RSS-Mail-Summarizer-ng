@@ -13,7 +13,6 @@ steps:
       - --source=. 
       - --entry-point=sendmail_trigger
       - --trigger-http
-      - --service-account=serviceaccount-1@mail-summerizer-486619.iam.gserviceaccount.com
       - --memory=2GiB
       - --timeout=300s
       - --set-secrets=CREDENTIALS_CREDENTIALS_JSON=gmail-credentials:latest,CREDENTIALS_TOKEN_JSON=gmail-token:latest,GEMINI_API_KEY=gemini-api-key:latest,RECIPIENT_EMAIL=recipient-email:latest,RSS_FIREBASE_KEY=rss-firebase-key:latest,RSS_VERTEX_AI_KEY=rss-vertex-ai-key:latest,SENDER_EMAIL=sender-email:latest

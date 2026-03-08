@@ -13,7 +13,6 @@ steps:
       - --entry-point=rss_connector
       - --trigger-http
       #- --allow-unauthenticated
-      - --service-account=serviceaccount-1@mail-summerizer-486619.iam.gserviceaccount.com
       - --memory=1GiB
       - --timeout=540s
       - --set-secrets=RSS_FIREBASE_KEY=rss-firebase-key:latest
