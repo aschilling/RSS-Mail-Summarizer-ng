@@ -231,6 +231,72 @@ gcloud secrets add-iam-policy-binding gmail-token \
 
 ---
 
+## 10.1 Lokale Secrets aus Secret Manager in `.env` synchronisieren
+
+`keys/token.json` und `keys/gmail_credentials.json` sind lokal bereits vorhanden.
+Für lokale Tests fehlen danach typischerweise noch die Runtime-Secrets aus Google Secret Manager.
+
+### Secret -> `.env` Mapping
+
+| Secret Manager Name | `.env` Key |
+|---|---|
+| `rss-firebase-key` | `RSS_FIREBASE_KEY` |
+| `gmail-token` | `GMAIL_TOKEN_JSON` und `CREDENTIALS_TOKEN_JSON` |
+| `gemini-api-key` | `GEMINI_API_KEY` |
+| `gcs-bucket-name` | `GCS_BUCKET_NAME` |
+| `sender-email` | `SENDER_EMAIL` |
+| `recipient-email` | `RECIPIENT_EMAIL` |
+
+Zusätzlich lokal setzen:
+- `PROJECT_ID`
+- `LOG_LEVEL`
+
+### `.env` automatisch erzeugen
+
+Im Repo-Root ausführen:
+
+```bash
+# Linux / Mac
+gcloud auth login
+gcloud config set project <PROJECT_ID>
+
+PROJECT_ID=$(gcloud config get-value project)
+
+RSS_FIREBASE_KEY=$(gcloud secrets versions access latest --secret=rss-firebase-key | jq -c .)
+GMAIL_TOKEN_JSON=$(gcloud secrets versions access latest --secret=gmail-token | jq -c .)
+GEMINI_API_KEY=$(gcloud secrets versions access latest --secret=gemini-api-key | tr -d '\r\n')
+GCS_BUCKET_NAME=$(gcloud secrets versions access latest --secret=gcs-bucket-name | tr -d '\r\n')
+SENDER_EMAIL=$(gcloud secrets versions access latest --secret=sender-email | tr -d '\r\n')
+RECIPIENT_EMAIL=$(gcloud secrets versions access latest --secret=recipient-email | tr -d '\r\n')
+
+cat > .env <<EOF
+PROJECT_ID=$PROJECT_ID
+LOG_LEVEL=INFO
+RSS_FIREBASE_KEY='$RSS_FIREBASE_KEY'
+GMAIL_TOKEN_JSON='$GMAIL_TOKEN_JSON'
+CREDENTIALS_TOKEN_JSON='$GMAIL_TOKEN_JSON'
+GEMINI_API_KEY=$GEMINI_API_KEY
+GCS_BUCKET_NAME=$GCS_BUCKET_NAME
+SENDER_EMAIL=$SENDER_EMAIL
+RECIPIENT_EMAIL=$RECIPIENT_EMAIL
+EOF
+
+echo "Created .env"
+```
+
+```cmd
+# Windows (GCloud Cli)
+gcloud auth login
+```
+
+```cmd
+gcloud config set project <PROJECT_ID>
+```
+
+```cmd
+powershell -NoProfile -Command "$p=(gcloud config get-value project).Trim();$rf=(gcloud secrets versions access latest --secret=rss-firebase-key | ConvertFrom-Json | ConvertTo-Json -Compress);$gt=(gcloud secrets versions access latest --secret=gmail-token | ConvertFrom-Json | ConvertTo-Json -Compress);$gk=(gcloud secrets versions access latest --secret=gemini-api-key).Trim();$bn=(gcloud secrets versions access latest --secret=gcs-bucket-name).Trim();$se=(gcloud secrets versions access latest --secret=sender-email).Trim();$re=(gcloud secrets versions access latest --secret=recipient-email).Trim();Set-Content -Encoding utf8 .env ('PROJECT_ID=' + $p);Add-Content .env 'LOG_LEVEL=INFO';Add-Content .env ('RSS_FIREBASE_KEY=''' + $rf + '''');Add-Content .env ('GMAIL_TOKEN_JSON=''' + $gt + '''');Add-Content .env ('CREDENTIALS_TOKEN_JSON=''' + $gt + '''');Add-Content .env ('GEMINI_API_KEY=' + $gk);Add-Content .env ('GCS_BUCKET_NAME=' + $bn);Add-Content .env ('SENDER_EMAIL=' + $se);Add-Content .env ('RECIPIENT_EMAIL=' + $re)"
+```
+
 ## 11. GitHub Repository und Cloud Build verbinden (Google Cloud Console Web UI)
 
 *(Muss durch den Owner des Repositories durchgeführt werden)*
