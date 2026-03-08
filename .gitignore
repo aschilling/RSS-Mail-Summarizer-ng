@@ -12,6 +12,7 @@ __pycache__/
 **/keys/token.json
 **/keys/serviceAccountKey.json
 **/keys/gmail_credentials.json
+**/keys/credentials.json
 token.json
 serviceAccountKey.json
 gmail_credentials.json
