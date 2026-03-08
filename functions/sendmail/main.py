@@ -30,13 +30,11 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-# Umgebungskonstanten (werden auch im Service genutzt)
+# Umgebungskonstanten
 MARKDOWN_REPORT_PATH = "markdown_report.md"
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
 PROJECT_ID = os.environ.get("PROJECT_ID")
-
-# die constants werden jetzt in utils verwaltet
 
 
 class SendMailService:
@@ -72,10 +70,11 @@ class SendMailService:
         logger.info(f"Gefundene ungesendete Einträge: {len(unsent)}")
 
         # --- SOURCES-Filter ---
+        sources_cfg = SendmailConfig.SOURCES
         filtered = []
         for e in unsent:
             src = e.get("source") or ""
-            allowed = SendmailConfig.SOURCES.get(src)
+            allowed = sources_cfg.get(src)
             if allowed is None or allowed == ["*"] or allowed:
                 filtered.append(e)
             # leere Liste [] → Quelle deaktiviert
@@ -91,7 +90,8 @@ class SendMailService:
             unsent = [e for e in unsent if e.get("time_stamp") is None or e["time_stamp"] >= cutoff]
             logger.info(f"Nach TIME_WINDOW_HOURS-Filter ({SendmailConfig.TIME_WINDOW_HOURS}h): {len(unsent)} von {before} Einträgen verbleiben.")
 
-        # --- LIMIT ---
+        # --- LIMIT (neueste zuerst) ---
+        unsent = sorted(unsent, key=lambda e: e.get("time_stamp") or 0, reverse=True)
         if SendmailConfig.LIMIT is not None and len(unsent) > SendmailConfig.LIMIT:
             logger.info(f"Anzahl Einträge auf LIMIT={SendmailConfig.LIMIT} begrenzt (waren {len(unsent)}).")
             unsent = unsent[:SendmailConfig.LIMIT]
@@ -152,7 +152,8 @@ class SendMailService:
             
             # 🔑 KRITISCH: Nach LLM-Aufrufen DB nochmal laden, um die neuen Summaries zu holen!
             logger.info("Lade aktualisierte Einträge aus DB...")
-            unsent = get_unsent_entries()
+            allowed_urls = {e["url"] for e in unsent}
+            unsent = [e for e in get_unsent_entries() if e["url"] in allowed_urls]
             logger.info(f"Aktualisierte Einträge geladen: {len(unsent)}")
 
         summaries_from_db = {
