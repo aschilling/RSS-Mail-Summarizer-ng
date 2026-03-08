@@ -176,22 +176,22 @@ Folgende Schritte sind dazu notwendig:
    - Diese Datei enthält den Refresh-Token und wird für den automatisierten Zugriff benötigt.  
 
 6. **Google Secrets erstellen**  
-Die gerade erstellte credentials.json muss als Secret im Google Secret Manager mit dem Namen 'credentials-credentials-json' gespeichert werden und der Token als 'credentials-token-json'. Das anlegen erfolgt analog zum Secret mit der serviceAccountKey.json und anschließend werden noch die folgenden Befehle ausgeführt um den Dienstkonten die richtigen Berechtigungen zu erteilen:
+Die gerade erstellte credentials.json muss als Secret im Google Secret Manager mit dem Namen 'gmail-credentials' gespeichert werden und der Token als 'gmail-token'. Das anlegen erfolgt analog zum Secret mit der serviceAccountKey.json und anschließend werden noch die folgenden Befehle ausgeführt um den Dienstkonten die richtigen Berechtigungen zu erteilen:
 
 ```bash
-gcloud secrets add-iam-policy-binding credentials-token-json \
+gcloud secrets add-iam-policy-binding gmail-token \
   --member="serviceAccount:${IHRE_DIENSTKONTO_EMAIL}" \
   --role="roles/secretmanager.secretAccessor"
 
-gcloud secrets add-iam-policy-binding credentials-token-json \
+gcloud secrets add-iam-policy-binding gmail-token \
   --member="serviceAccount:${PROJECT_NO}-compute@developer.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 
-gcloud secrets add-iam-policy-binding credentials-credentials-json \
+gcloud secrets add-iam-policy-binding gmail-credentials \
   --member="serviceAccount:${IHRE_DIENSTKONTO_EMAIL}" \
   --role="roles/secretmanager.secretAccessor"
 
-gcloud secrets add-iam-policy-binding credentials-credentials-json \
+gcloud secrets add-iam-policy-binding gmail-credentials \
   --member="serviceAccount:${PROJECT_NO}-compute@developer.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 ```

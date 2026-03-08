@@ -14,7 +14,7 @@ steps:
       - --runtime=python311
       - --memory=512MiB
       - --timeout=60s
-      - --set-secrets=GMAIL_TOKEN_JSON=credentials-token-json:latest,RSS_FIREBASE_KEY=rss-firebase-key:latest
+      - --set-secrets=GMAIL_TOKEN_JSON=gmail-token:latest,RSS_FIREBASE_KEY=rss-firebase-key:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
