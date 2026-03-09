@@ -14,6 +14,7 @@ angestossen.
 
 import os
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 import functions_framework
 from datetime import date
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Umgebungskonstanten
-MARKDOWN_REPORT_PATH = "functions/sendmail/markdown_report.md"
+MARKDOWN_REPORT_PATH = str(Path(__file__).resolve().parent / "markdown_report.md")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
 PROJECT_ID = os.environ.get("PROJECT_ID")
