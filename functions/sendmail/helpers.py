@@ -175,6 +175,7 @@ class AIService:
         self.gemini_api_key = gemini_api_key
         self.genai_client = None
         self.llm = None
+        self.website_batch_size = int(os.getenv("WEBSITE_SUMMARY_BATCH_SIZE", "20"))
 
     def _init_llm(self):
         rate_limiter = InMemoryRateLimiter(requests_per_second=0.2, check_every_n_seconds=0.1, max_bucket_size=1)
@@ -197,11 +198,40 @@ class AIService:
         self.llm = self._init_llm()
 
     def summarise_and_categorize_websites(self, links_list):
-        """Fasst URLs zusammen und kategorisiert sie (1:1 von llm_calls.py)."""
+        """Fasst URLs zusammen und kategorisiert sie in stabilen Batches."""
         self._ensure_ai_clients()
         logger.info(f"Starte Zusammenfassung & Kategorisierung für {len(links_list)} URLs.")
-        prompt = self._build_prompt(links_list)
-        return self._process_llm_response(prompt)
+
+        if not links_list:
+            return {}
+
+        batch_size = max(1, self.website_batch_size)
+        all_results = {}
+        total_batches = (len(links_list) + batch_size - 1) // batch_size
+
+        for batch_index, start in enumerate(range(0, len(links_list), batch_size), start=1):
+            batch_urls = links_list[start:start + batch_size]
+            logger.info(
+                "Verarbeite Website-Batch %s/%s (%s URLs)",
+                batch_index,
+                total_batches,
+                len(batch_urls),
+            )
+            prompt = self._build_prompt(batch_urls)
+            batch_results = self._process_llm_response(prompt)
+            all_results.update(batch_results)
+
+            missing_urls = [url for url in batch_urls if url not in batch_results]
+            if missing_urls:
+                logger.warning(
+                    "Batch %s/%s: %s URLs ohne parsebares Ergebnis.",
+                    batch_index,
+                    total_batches,
+                    len(missing_urls),
+                )
+
+        logger.info("Batch-Verarbeitung abgeschlossen: %s/%s URLs mit Ergebnis.", len(all_results), len(links_list))
+        return all_results
 
     def _build_prompt(self, links_list):
         """Erstellt den Prompt für Gemini (EXAKT wie in llm_calls.py)."""
