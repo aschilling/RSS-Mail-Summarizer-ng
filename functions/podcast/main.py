@@ -140,7 +140,7 @@ class PodcastAIService:
                 clean_url: str = self._clean_youtube_url(url)
                 youtube_video = types.Part.from_uri(file_uri=clean_url, mime_type="video/*")
                 response = self.client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.1-flash-lite-preview",
                     contents=[
                         youtube_video,
                         "Erstelle eine sehr ausfuehrliche, detaillierte Zusammenfassung dieses Videos. "
@@ -173,7 +173,7 @@ class PodcastAIService:
 
         try:
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.1-flash-lite-preview",
                 contents=f"Nachrichten-Rohtexte:\n{content_text}",
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
