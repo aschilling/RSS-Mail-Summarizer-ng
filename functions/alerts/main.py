@@ -113,7 +113,7 @@ class AlertProcessor:
 
     def _clean_url(self, url: str) -> str:
         """Extract real URL from Google redirect wrappers."""
-        if "google.com/url" in url and ("q=" in url or "url=" in url):
+        if "google." in url and "/url" in url and ("q=" in url or "url=" in url):
             param: str = "q=" if "q=" in url else "url="
             try:
                 return unquote(url.split(param)[1].split("&")[0])

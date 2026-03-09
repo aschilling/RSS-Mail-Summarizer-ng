@@ -15,8 +15,10 @@ class AlertConfig:
 
     # URLs die ignoriert werden
     LINK_BLACKLIST: List[str] = [
-        "google.com/alerts", "alerts/remove", "alerts/edit",
-        "support.google.com", "google.com/settings",
+        "google.com/alerts", "google.de/alerts", "google.at/alerts", "google.ch/alerts",
+        "alerts/remove", "alerts/edit",
+        "support.google.com", 
+        "google.com/settings", "google.de/settings", "google.at/settings", "google.ch/settings",
     ]
 
     # Gmail API Scopes
