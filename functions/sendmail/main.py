@@ -13,8 +13,11 @@ angestossen.
 """
 
 import os
+import sys
+import json
 import logging
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 import functions_framework
 from datetime import date
@@ -22,14 +25,20 @@ from datetime import date
 # interne helpers
 from config import SendmailConfig
 from database import get_unsent_entries, mark_as_sent, add_datarecord
-from helpers import gmail_send_mail, create_markdown_report, cleanup_markdown_report, AIService, get_gemini_api_key
+from helpers import get_gemini_api_key
+from mail_report_helpers import gmail_send_mail, create_markdown_report, cleanup_markdown_report
+from ai_helpers import AIService
+from hn_popularity import fetch_hn_points
 
 # Logger setup
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
 load_dotenv()
+logger = logging.getLogger(__name__)
+logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "DEBUG").upper(), logging.DEBUG))
+
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(handler)
 
 # Umgebungskonstanten
 MARKDOWN_REPORT_PATH = str(Path(__file__).resolve().parent / "markdown_report.md")
@@ -138,7 +147,23 @@ class SendMailService:
                     raise
             
             logger.info(f"Gesamt Summaries erhalten: {len(summaries)}")
+
+            # HN-Punkte parallel für alle Nicht-Alert-URLs abrufen
+            alert_urls = {e["url"] for e in unsent if e.get("source") == "alerts"}
+            hn_fetch_urls = [url for url in summaries
+                 if url not in alert_urls
+                 and "youtube.com" not in url
+                 and "youtu.be" not in url]
+            hn_points_dict = {}
+            if hn_fetch_urls:
+                logger.info(f"Rufe HN-Punkte für {len(hn_fetch_urls)} URLs ab (parallel)...")
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    results = executor.map(fetch_hn_points, hn_fetch_urls)
+                    hn_points_dict = dict(zip(hn_fetch_urls, results))
+                logger.info("HN-Punkte abgerufen.")
+
             for url, meta in summaries.items():
+                meta["hn_points"] = hn_points_dict.get(url)
                 logger.debug(f"Schreibe Summary für {url}: category={meta.get('category')}, summary={str(meta.get('summary'))[:50]}...")
                 add_datarecord(
                     url=url,
@@ -180,7 +205,7 @@ class SendMailService:
         )
         mark_as_sent(unsent)
         logger.info("Mailversand abgeschlossen.")
-        return True
+        return {"entries_processed": len(unsent), "mail_sent_to": self.recipient_email}
 
 
 
@@ -190,8 +215,18 @@ def sendmail_trigger(request=None):
     """HTTP‑Entry‑Point, der einen `SendMailService` ausführt."""
     try:
         service = SendMailService(sender_email=SENDER_EMAIL, recipient_email=RECIPIENT_EMAIL)
-        ok = service.run()
-        return ("mail sent", 200) if ok else ("no entries", 200)
+        result = service.run()
+        if not result:
+            return json.dumps({"status": "ok", "resource": "gmail/sendmail", "details": {"message": "Keine ungesendeten Einträge gefunden."}}, indent=2), 200
+        response_data = {
+            "status": "success",
+            "resource": "gmail/sendmail",
+            "details": {
+                "entries_processed": result["entries_processed"],
+                "mail_sent_to": result["mail_sent_to"],
+            },
+        }
+        return json.dumps(response_data, indent=2), 200
     except Exception as e:
         logger.error("Fehler in sendmail_trigger: %s", e, exc_info=True)
-        return (f"error: {e}", 500)
+        return json.dumps({"status": "error", "resource": "gmail/sendmail", "details": {"error": str(e)}}, indent=2), 500

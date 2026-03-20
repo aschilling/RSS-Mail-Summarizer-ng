@@ -8,7 +8,9 @@ Das Projekt ist modular aufgebaut und umfasst folgende Dateien:
 
 * **Config (`config.py`)**: Quellen-Filter (`SOURCES`), maximale Anzahl Eintraege (`LIMIT`) und optionales Zeitfenster (`TIME_WINDOW_HOURS`).
 * **Database (`database.py`)**: Firestore-Anbindung - laedt `mail_sent=False` Eintraege, speichert Summary-Updates und markiert versendete Eintraege.
-* **Helpers (`helpers.py`)**: Gmail-Versand, Report-Erzeugung (`markdown_report.md`) und AI-Logik fuer Website-/YouTube-Summaries.
+* **Helpers (`helpers.py`)**: API-Key-Utilities (`get_gemini_api_key`).
+* **Mail/Report Helpers (`mail_report_helpers.py`)**: Gmail-Versand und Report-Erzeugung (`markdown_report.md`).
+* **AI Helpers (`ai_helpers.py`)**: AI-Logik fuer Website-/YouTube-Summaries.
 * **Utils (`utils.py`)**: Hilfsfunktionen fuer API-Key-Sanitisierung.
 * **SendMailService (`main.py`)**: Orchestriert den Ablauf (laden, filtern, zusammenfassen, Report erzeugen, Mail senden, als gesendet markieren).
 * **sendmail_trigger (`main.py`)**: HTTP-Einstiegspunkt - wird von Scheduler oder manuell aufgerufen.
@@ -29,7 +31,7 @@ Das Projekt ist modular aufgebaut und umfasst folgende Dateien:
 
 Zusaetzlich werden fuer lokale Tests typischerweise benoetigt:
 * `serviceAccountKey.json` (lokale Firestore-Authentifizierung)
-* Gmail Token als Umgebungsvariable `CREDENTIALS_TOKEN_JSON` (oder lokal als `credentials/token.json`)
+* Gmail Token als Umgebungsvariable `GMAIL_TOKEN_JSON` (oder lokal als `credentials/token.json`)
 * `GEMINI_API_KEY` (oder `GEMINI_API_KEY_SECRET`)
 
 ## Lokales Setup und Testen
@@ -50,7 +52,7 @@ Zusaetzlich werden fuer lokale Tests typischerweise benoetigt:
    SENDER_EMAIL=<SENDER_EMAIL>
    RECIPIENT_EMAIL=<RECIPIENT_EMAIL>
    GEMINI_API_KEY=<GEMINI_API_KEY>
-   CREDENTIALS_TOKEN_JSON='<GMAIL_TOKEN_JSON>'
+   GMAIL_TOKEN_JSON='<GMAIL_TOKEN_JSON>'
    PROJECT_ID=<PROJECT_ID>
    LOG_LEVEL=INFO
    ```
@@ -76,7 +78,6 @@ Zusaetzlich werden fuer lokale Tests typischerweise benoetigt:
    ```
 3. Erstelle benoetigte Secrets im Secret Manager:
    ```bash
-   gcloud secrets create gmail-credentials --replication-policy="automatic"
    gcloud secrets create gmail-token --replication-policy="automatic"
    gcloud secrets create gemini-api-key --replication-policy="automatic"
    gcloud secrets create sender-email --replication-policy="automatic"
@@ -85,7 +86,6 @@ Zusaetzlich werden fuer lokale Tests typischerweise benoetigt:
    ```
 4. Lade lokale Dateien/Werte in die Secrets hoch:
    ```bash
-   gcloud secrets versions add gmail-credentials --data-file="keys/gmail_credentials.json"
    gcloud secrets versions add gmail-token --data-file="keys/token.json"
    gcloud secrets versions add gemini-api-key --data-file=- <<< "<GEMINI_API_KEY>"
    gcloud secrets versions add sender-email --data-file=- <<< "<SENDER_EMAIL>"
@@ -104,7 +104,7 @@ Zusaetzlich werden fuer lokale Tests typischerweise benoetigt:
      --runtime=python311 \
      --memory=2GiB \
      --timeout=300s \
-     --set-secrets=CREDENTIALS_CREDENTIALS_JSON=gmail-credentials:latest,CREDENTIALS_TOKEN_JSON=gmail-token:latest,GEMINI_API_KEY=gemini-api-key:latest,RECIPIENT_EMAIL=recipient-email:latest,RSS_FIREBASE_KEY=rss-firebase-key:latest,SENDER_EMAIL=sender-email:latest \
+       --set-secrets=GMAIL_TOKEN_JSON=gmail-token:latest,GEMINI_API_KEY=gemini-api-key:latest,RECIPIENT_EMAIL=recipient-email:latest,RSS_FIREBASE_KEY=rss-firebase-key:latest,SENDER_EMAIL=sender-email:latest \
      --set-env-vars=PROJECT_ID=<PROJECT_ID>,LOG_LEVEL=INFO
    ```
 
