@@ -9,6 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.rate_limiters import InMemoryRateLimiter
 from google import genai
 from google.genai import types
+from config import SendmailConfig
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class AIService:
     def _init_llm(self):
         rate_limiter = InMemoryRateLimiter(requests_per_second=0.2, check_every_n_seconds=0.1, max_bucket_size=1)
         return ChatGoogleGenerativeAI(
-            model="gemini-3.1-flash-lite-preview",
+            model=SendmailConfig.GEMINI_MODEL,
             google_api_key=self.gemini_api_key,
             temperature=0,
             max_tokens=None,
@@ -86,10 +87,15 @@ class AIService:
                 (
                     "system",
                     """
-                You are an assistant that processes multiple URLs provided by the user.
+                You are a daily news editor at The Economist who processes multiple URLs provided by the user.
                 For each input, perform the following tasks:
 
-                1. Summarize the content of the Website in about 3 sentences.
+                1. Write a safe, high-level English summary (1–3 sentences) for the content of the Website. 
+                    - Be factual, neutral, and compact. Prefer active voice. No fluff.
+                    - Use neutral, non-graphic language
+                    - NEVER write "the article", "the podcast", "the text" or any self-referential mention of the summary's original piece. Focus on the content, and refer to it directly.
+                    - If possible, mention the author by name.
+                    - Translate to English if needed. 
                 2. Categorize it into one of the following categories:
                    - Technology and Gadgets
                    - Artificial Intelligence
@@ -102,14 +108,14 @@ class AIService:
                    - Entertainment and Lifestyle
                    - Travel and Tourism
                    If a website does not fit into one of these categories, return 'Uncategorized'.
-                3. Identify specific topics or entities mentioned in the articles. These should be precise and clearly defined, such as names of technologies, events, organizations, or specific concepts discussed in the text.
+                3. Identify specific topics or entities mentioned in the articles. These should be precise and clearly defined, such as names of technologies, events, organizations, or specific concepts discussed in the text. Prefer consistency across items; avoid inventing many distinct topics.
                 4. Estimate the reading time of the article in minutes based on the length and complexity of the content. Make sure you assess each article individually!
-                
+
                 SPECIAL RULE FOR GITHUB URLs:
                 - If the URL is a GitHub **repository** page, set Category **exactly** to "GitHub" (override the list above).
                 - If content is a **GitHub Blog** Post, treat it like any other website, do not categorize it as "GitHub". Check the content of the page to determine if it is a blog post.
                 DO NOT use the "GitHub" category; choose from the normal list above if the post is a blog post. Only repositories should be categorized as "GitHub".
-                
+
                 If you are unable to access the contents of the provided website, return "Website content could not be reached!" for that input.
 
                 Format your response as follows:
@@ -271,7 +277,11 @@ Anweisungen:
 """
                 contents = [youtube_video, types.Part.from_text(text=prompt_text)]
                 generate_config = types.GenerateContentConfig(temperature=0, max_output_tokens=1024, response_modalities=["TEXT"])
-                response = self.genai_client.models.generate_content(model="gemini-3.1-flash-lite-preview", contents=contents, config=generate_config)
+                response = self.genai_client.models.generate_content(
+                    model=SendmailConfig.GEMINI_MODEL,
+                    contents=contents,
+                    config=generate_config,
+                )
                 text = response.text.strip()
                 summary_match = re.search(r"Summary:\s*(.+)", text, re.IGNORECASE)
                 reading_time_match = re.search(r"Reading\s*Time:\s*(\d+)", text, re.IGNORECASE)
@@ -307,7 +317,11 @@ Reading Time: <geschätzte Minuten>
 """
                 contents = [youtube_video, types.Part.from_text(text=prompt_text)]
                 generate_config = types.GenerateContentConfig(temperature=0, max_output_tokens=1024, response_modalities=["TEXT"])
-                response = self.genai_client.models.generate_content(model="gemini-3.1-flash-lite-preview", contents=contents, config=generate_config)
+                response = self.genai_client.models.generate_content(
+                    model=SendmailConfig.GEMINI_MODEL,
+                    contents=contents,
+                    config=generate_config,
+                )
                 text = response.text.strip()
                 summary_match = re.search(r"Summary:\s*(.+)", text, re.IGNORECASE)
                 reading_time_match = re.search(r"Reading\s*Time:\s*(\d+)", text, re.IGNORECASE)

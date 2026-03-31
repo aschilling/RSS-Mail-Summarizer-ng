@@ -7,6 +7,9 @@ import os
 class SendmailConfig:
     """Zentrale Config für den Sendmail-Generator."""
 
+    # Verwendetes Gemini-Modell für die Generierung von Zusammenfassungen
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite-preview")
+
     # Quellen-Filter – ["*"] = alle, [] = deaktiviert
     SOURCES = {
         "mastodon": ["*"],
